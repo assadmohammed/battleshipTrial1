@@ -22,6 +22,7 @@ class Player:
 class Battleship:
     def __init__(self):
         self.board_size = 10
+        self.column_labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
         self.ships = {
             "player": [
                 Ship("Aircraft Carrier", 5),
@@ -68,8 +69,8 @@ class Battleship:
             print("="*41)
         
         print("   ", end="")
-        for i in range(self.board_size):
-            print(f"  {i} ", end="")
+        for col in self.column_labels:
+            print(f"  {col} ", end="")
         print("\n   +" + "---+"*self.board_size)
         
         for i in range(self.board_size):
@@ -86,9 +87,9 @@ class Battleship:
                     print(" 💨 |", end="")
             print("\n   +" + "---+"*self.board_size)
 
-    def display_ship_status(self, ships: List[Ship]):
+    def display_ship_status(self, ships: List[Ship], title: str):
         print("\n" + "="*50)
-        print("║" + "YOUR SHIPS STATUS".center(48) + "║")
+        print("║" + title.center(48) + "║")
         print("="*50)
         for ship in ships:
             status = "🔥 SUNK" if ship.is_sunk() else "🚢 ACTIVE"
@@ -141,6 +142,9 @@ class Battleship:
                     self.place_ship(self.computer_board, ship, row, col, is_horizontal)
                     break
 
+    def convert_column_to_index(self, col_letter: str) -> int:
+        return self.column_labels.index(col_letter.upper())
+
     def check_hit(self, row: int, col: int, board: List[List[str]], ships: List[Ship]) -> bool:
         if board[row][col] == 'S':
             board[row][col] = 'H'
@@ -156,8 +160,10 @@ class Battleship:
         while True:
             try:
                 print("\n🎯 Your turn to attack!")
-                row = int(input("Enter row number to attack: "))
-                col = int(input("Enter column number to attack: "))
+                row = int(input("Enter row number to attack (0-9): "))
+                col_letter = input("Enter column letter to attack (A-J): ")
+                col = self.convert_column_to_index(col_letter)
+                
                 if 0 <= row < self.board_size and 0 <= col < self.board_size:
                     if self.player_guess_board[row][col] != ' ':
                         print("❌ You already attacked this position!")
@@ -172,20 +178,22 @@ class Battleship:
                         return False
                 else:
                     print("❌ Invalid coordinates. Please try again.")
-            except ValueError:
-                print("❌ Please enter valid numbers.")
+            except (ValueError, IndexError):
+                print("❌ Please enter valid coordinates (Row: 0-9, Column: A-J).")
 
     def computer_turn(self) -> bool:
         while True:
             row = random.randint(0, self.board_size - 1)
             col = random.randint(0, self.board_size - 1)
             if self.player_board[row][col] not in ['H', 'M']:
-                print(f"\n🤖 Computer attacks position ({row}, {col})")
+                print(f"\n🤖 Computer attacks position ({row}, {self.column_labels[col]})")
                 if self.check_hit(row, col, self.player_board, self.ships["player"]):
                     print("💥 Computer hit your ship!")
+                    self.player_board[row][col] = 'H'
                     return True
                 else:
                     print("💨 Computer missed!")
+                    self.player_board[row][col] = 'M'
                     return False
 
     def play(self):
@@ -205,15 +213,16 @@ class Battleship:
                 print(f"\nPlacing {ship.name} (size: {ship.size})")
                 self.display_board(self.player_board, "YOUR BOARD")
                 try:
-                    row = int(input(f"Enter starting row for {ship.name}: "))
-                    col = int(input(f"Enter starting column for {ship.name}: "))
+                    row = int(input(f"Enter starting row (0-9) for {ship.name}: "))
+                    col_letter = input(f"Enter starting column (A-J) for {ship.name}: ")
+                    col = self.convert_column_to_index(col_letter)
                     is_horizontal = input("Place horizontally? (y/n): ").lower() == 'y'
                     
                     if self.is_valid_placement(self.player_board, ship, row, col, is_horizontal):
                         self.place_ship(self.player_board, ship, row, col, is_horizontal)
                         break
-                except ValueError:
-                    print("❌ Please enter valid numbers.")
+                except (ValueError, IndexError):
+                    print("❌ Please enter valid coordinates (Row: 0-9, Column: A-J).")
 
         print("\n🤖 Computer is placing ships...")
         self.place_computer_ships()
@@ -222,7 +231,8 @@ class Battleship:
             print("\n" + "="*50)
             self.display_board(self.player_board, "YOUR BOARD")
             self.display_board(self.player_guess_board, "YOUR ATTACKS")
-            self.display_ship_status(self.ships["player"])
+            self.display_ship_status(self.ships["player"], "YOUR SHIPS STATUS")
+            self.display_ship_status(self.ships["computer"], "COMPUTER'S SHIPS STATUS")
 
             if self.player_turn():
                 if all(ship.is_sunk() for ship in self.ships["computer"]):
@@ -241,5 +251,7 @@ class Battleship:
 if __name__ == "__main__":
     game = Battleship()
     game.play()
+
+
 
 
